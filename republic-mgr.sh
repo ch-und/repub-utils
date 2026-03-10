@@ -5,7 +5,7 @@ REPUBLIC_HOME="$HOME/.republicd"
 BINARY_PATH="/usr/local/bin/republicd"
 BINARY_URL="https://github.com/RepublicAI/networks/releases/download/v0.3.0/republicd-linux-amd64"
 CHAIN_ID="raitestnet_77701-1"
-VERSION="v0.1.0"
+VERSION="v0.3.0"
 SNAP_RPC="https://statesync.republicai.io"
 RPC_PUBLIC="https://rpc.republicai.io:443"
 PEERS="4e14a1edc972ed3f4c03eae8434cb3997b342029@46.224.213.11:43656,c5f9653155d9095901c8044dc01fadf49212f350@45.143.198.6:26656,bb8dd41fc4731fd1b99bb054103c5c9526433bdc@149.5.246.217:43656,89f3b98f9428ce7c7bb6d48294dcceeb14446302@38.49.214.43:26656,87b1a77039b469eac7e3441ee14008cbed732ed9@38.49.214.87:26656,fb1f134e0dcd5c6c5719b318211598133fab46fb@154.12.118.199:26656"
@@ -36,13 +36,80 @@ get_balance() {
 
 # --- Chức năng chính ---
 
+download_and_install_binary() {
+    local ubuntu_ver=$1
+    cd $HOME
+    curl -L "$BINARY_URL" -o republicd
+    chmod +x republicd
+    
+    # Patch binary nếu GLIBC đã được cài
+    if [ "$ubuntu_ver" -le 22 ]; then
+        patchelf --set-interpreter /opt/glibc-2.39/lib/ld-linux-x86-64.so.2 republicd
+        patchelf --set-rpath /opt/glibc-2.39/lib republicd
+    fi
+    
+    sudo mv republicd /usr/local/bin/republicd
+    republicd version
+}
+
 install_node() {
-    msg "Cài đặt phụ trợ..."
-    sudo apt install jq bc git curl
-    msg "Đang cài đặt Republic Binary..."
-    curl -L "$BINARY_URL" -o /tmp/republicd
-    chmod +x /tmp/republicd
-    sudo mv /tmp/republicd "$BINARY_PATH"
+    msg "Kiểm tra và cài đặt dependencies..."
+    
+    # Cài đặt phụ trợ
+    sudo apt update
+    sudo apt install jq bc git curl wget patchelf lsb-release -y
+    
+    # Kiểm tra Go
+    msg "Kiểm tra Go..."
+    go version || {
+        msg "Go chưa được cài đặt. Đang cài đặt Go 1.22.5..."
+        cd $HOME
+        GO_VERSION="1.22.5"
+        wget "https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+        sudo rm -rf /usr/local/go
+        sudo tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+        rm "go${GO_VERSION}.linux-amd64.tar.gz"
+        
+        echo 'export GOROOT=/usr/local/go' >> $HOME/.bash_profile
+        echo 'export GOPATH=$HOME/go' >> $HOME/.bash_profile
+        echo 'export GO111MODULE=on' >> $HOME/.bash_profile
+        echo 'export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin' >> $HOME/.bash_profile
+        source $HOME/.bash_profile
+    }
+    go version
+    
+    # Kiểm tra Ubuntu version và cài GLIBC nếu cần
+    msg "Kiểm tra phiên bản Ubuntu..."
+    UBUNTU_VER=$(lsb_release -rs | cut -d. -f1)
+    if [ "$UBUNTU_VER" -le 22 ]; then
+        msg "Ubuntu $UBUNTU_VER <= 22.04. Cài đặt GLIBC 2.39 để tránh lỗi GLIBC..."
+        cd $HOME
+        wget -O glibc-2.39-ubuntu24.tar.gz https://raw.githubusercontent.com/coinsspor/coinsspor/main/glibc-2.39-ubuntu24.tar.gz
+        tar -xzvf glibc-2.39-ubuntu24.tar.gz
+        sudo mkdir -p /opt/glibc-2.39/lib
+        sudo mv glibc-transfer/* /opt/glibc-2.39/lib/
+        /opt/glibc-2.39/lib/ld-linux-x86-64.so.2 --version
+        rm -rf glibc-transfer glibc-2.39-ubuntu24.tar.gz
+    fi
+    
+    # Tải và cài đặt Republic Binary
+    read -p "Nhập version binary (mặc định v0.3.0): " VERSION
+    VERSION=${VERSION:-v0.3.0}
+    BINARY_URL="https://github.com/RepublicAI/networks/releases/download/$VERSION/republicd-linux-amd64"
+    
+    # Kiểm tra nếu binary đã tồn tại và version đúng
+    if command -v republicd &> /dev/null; then
+        CURRENT_VER=$(republicd version 2>/dev/null)
+        if [ "$CURRENT_VER" = "$VERSION" ]; then
+            msg "Binary version $VERSION đã được cài đặt."
+        else
+            msg "Version hiện tại: $CURRENT_VER. Đang cập nhật lên $VERSION..."
+            download_and_install_binary "$UBUNTU_VER"
+        fi
+    else
+        msg "Đang tải Republic Binary version $VERSION..."
+        download_and_install_binary "$UBUNTU_VER"
+    fi
     
     read -p "Nhập Moniker: " MONIKER
     republicd init "$MONIKER" --chain-id "$CHAIN_ID" --home "$REPUBLIC_HOME"
