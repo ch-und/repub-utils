@@ -15,9 +15,9 @@ RPC_PUBLIC="${RPC_PUBLIC:=https://rpc.republicai.io:443}"
 # --- Cấu hình Delegate ---
 CONFIG_FILE="config.json"                  # File cấu hình validator
 MIN_BALANCE=0.3                            # Số dư tối thiểu để delegate (RAI)
-RESERVE_AMOUNT=0.25                        # Giữ lại (RAI) - để tránh balance = 0
+RESERVE_AMOUNT=0.005                        # Giữ lại (RAI) - để tránh balance = 0
 GAS_LIMIT=300000
-FEES="250000000000000000arai"
+FEES="5000000000000000arai"
 
 # --- Màu sắc ---
 GREEN='\033[0;32m'
