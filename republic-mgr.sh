@@ -29,7 +29,7 @@ warn() { echo -e "${YELLOW}[!] $1${NC}"; }
 
 get_balance() {
     local addr=$1
-    local bal_arai=$(republicd query bank balances "$addr" --node "$RPC_PUBLIC" --output json 2>/dev/null | jq -r '.balances[] | select(.denom=="arai") | .amount')
+    local bal_arai=$(republicd query bank balances "$addr" --home "$REPUBLIC_HOME" --output json 2>/dev/null | jq -r '.balances[] | select(.denom=="arai") | .amount')
     if [ -z "$bal_arai" ]; then bal_arai=0; fi
     echo "scale=4; $bal_arai/1000000000000000000" | bc
 }
@@ -93,9 +93,9 @@ install_node() {
     fi
     
     # Tải và cài đặt Republic Binary
-    read -p "Nhập version binary (mặc định v0.3.0): " VERSION
-    VERSION=${VERSION:-v0.3.0}
-    BINARY_URL="https://github.com/RepublicAI/networks/releases/download/$VERSION/republicd-linux-amd64"
+    read -p "Nhập version binary (mặc định 0.3.0): " VERSION
+    VERSION=${VERSION:-0.3.0}
+    BINARY_URL="https://github.com/RepublicAI/networks/releases/download/v$VERSION/republicd-linux-amd64"
     
     # Kiểm tra nếu binary đã tồn tại và version đúng
     if command -v republicd &> /dev/null; then
@@ -237,7 +237,7 @@ EOF
             --home="$REPUBLIC_HOME" \
             --gas=400000 \
             --fees=400000000000000000arai \
-            --node "$RPC_PUBLIC" \
+            --home "$REPUBLIC_HOME" \
             --keyring-backend "$KEYRING_BACKEND" \
             -y
     else
@@ -257,7 +257,7 @@ delegate_menu() {
             echo -e "Balance hiện tại: ${BLUE}$bal RAI${NC}"
             read -p "Nhập số lượng RAI muốn delegate: " stake_rai
             stake_arai=$(echo "$stake_rai * 1000000000000000000 / 1" | bc)
-            republicd tx staking delegate "$val_addr" "${stake_arai}arai" --from "$kname" --chain-id "$CHAIN_ID" --gas 300000 --fees 250000000000000000arai --node "$RPC_PUBLIC" --keyring-backend "$KEYRING_BACKEND" --home "$REPUBLIC_HOME" -y
+            republicd tx staking delegate "$val_addr" "${stake_arai}arai" --from "$kname" --chain-id "$CHAIN_ID" --gas 300000 --fees 250000000000000000arai --keyring-backend "$KEYRING_BACKEND" --home "$REPUBLIC_HOME" -y
             ;;
         2)
             printf "%-15s | %-45s | %-10s\n" "Key Name" "Address" "Balance (RAI)"
@@ -279,7 +279,7 @@ delegate_menu() {
                     stake_rai=$(echo "$bal - 0.25" | bc -l)
                     stake_arai=$(echo "$stake_rai * 1000000000000000000 / 1" | bc)
                     msg "Ví $name: Stake $stake_rai RAI..."
-                    republicd tx staking delegate "$val_addr" "${stake_arai}arai" --from "$name" --chain-id "$CHAIN_ID" --gas 300000 --fees 250000000000000000arai --node "$RPC_PUBLIC" --keyring-backend "$KEYRING_BACKEND" --home "$REPUBLIC_HOME" -y
+                    republicd tx staking delegate "$val_addr" "${stake_arai}arai" --from "$name" --chain-id "$CHAIN_ID" --gas 300000 --fees 250000000000000000arai --keyring-backend "$KEYRING_BACKEND" --home "$REPUBLIC_HOME" -y
                     sleep 3
                 fi
             done
