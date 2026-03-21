@@ -10,11 +10,10 @@ REPUBLIC_HOME="${REPUBLIC_HOME:=$HOME/.republicd}"
 BINARY_PATH="${BINARY_PATH:=/usr/local/bin/republicd}"
 CHAIN_ID="${CHAIN_ID:=raitestnet_77701-1}"
 KEYRING_BACKEND="${KEYRING_BACKEND:=test}"
-RPC_PUBLIC="${RPC_PUBLIC:=https://rpc.republicai.io:443}"
 
 # --- Cấu hình Delegate ---
 CONFIG_FILE="config.json"                  # File cấu hình validator
-MIN_BALANCE=0.3                            # Số dư tối thiểu để delegate (RAI)
+MIN_BALANCE=0.2                            # Số dư tối thiểu để delegate (RAI)
 RESERVE_AMOUNT=0.005                        # Giữ lại (RAI) - để tránh balance = 0
 GAS_LIMIT=300000
 FEES="5000000000000000arai"
@@ -93,7 +92,7 @@ get_delegators() {
 get_balance() {
     local addr=$1
     local bal_arai=$(republicd query bank balances "$addr" \
-        --node "$RPC_PUBLIC" \
+        --home "$REPUBLIC_HOME" \
         --output json 2>/dev/null | \
         jq -r '.balances[] | select(.denom=="arai") | .amount')
     
@@ -137,7 +136,6 @@ delegate_tx() {
         --chain-id "$CHAIN_ID" \
         --gas "$GAS_LIMIT" \
         --fees "$FEES" \
-        --node "$RPC_PUBLIC" \
         --keyring-backend "$KEYRING_BACKEND" \
         --home "$REPUBLIC_HOME" \
         -y 2>&1 | grep -E "code|txhash|error" || msg "Giao dịch được gửi"
