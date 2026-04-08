@@ -2,8 +2,8 @@
 
 ## Clone
 ```
-git clone https://github.com/batuoc263/republicai-utils.git
-cd republicai-utils
+git clone https://github.com/ch-und/repub-utils.git
+cd repub-utils
 ```
 
 ## Run
@@ -26,9 +26,13 @@ Menu:
 ```
 
 Sử dụng chức năng 1 để cài đặt node
-Chúc năng 2 để tối ưu node (nếu cần)
+
+Chức năng 2 để tối ưu node (nếu cần)
+
 Sử dụng chức năng 6 để kiểm tra xem node đã sync chưa
+
 Sau khi node sync, hãy tạo ví (key name là `wallet`) để faucet (hoặc vào kênh discord xin mod - hên xui)
+
 Có balance rồi thì tạo validator (chú ý amount và min-self-delegate)
 
 ## Cron Unjail
